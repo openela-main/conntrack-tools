@@ -1,0 +1,57 @@
+From 1ba5e76a368aeb9fe17d3b691df4faa0dadc4523 Mon Sep 17 00:00:00 2001
+From: Kevin Cernekee <cernekee@chromium.org>
+Date: Thu, 26 Jan 2017 16:44:24 -0800
+Subject: conntrackd: cthelper: Don't leak nat_tuple
+
+nfexp_set_attr() copies |nat_tuple| rather than taking ownership, so
+it should be freed at the end of the loop.  Some of the other helpers
+(like rpc.c) do this, but it is missing here.
+
+Reported-by: Eric Caruso <ejcaruso@chromium.org>
+Signed-off-by: Kevin Cernekee <cernekee@chromium.org>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+---
+ src/helpers/amanda.c | 1 +
+ src/helpers/ftp.c    | 1 +
+ src/helpers/tftp.c   | 1 +
+ 3 files changed, 3 insertions(+)
+
+diff --git a/src/helpers/amanda.c b/src/helpers/amanda.c
+index 9e6c4e7..faee1cd 100644
+--- a/src/helpers/amanda.c
++++ b/src/helpers/amanda.c
+@@ -75,6 +75,7 @@ static int nat_amanda(struct pkt_buff *pkt, uint32_t ctinfo,
+ 			break;
+ 		}
+ 	}
++	nfct_destroy(nat_tuple);
+ 
+ 	if (port == 0) {
+ 		pr_debug("all ports in use\n");
+diff --git a/src/helpers/ftp.c b/src/helpers/ftp.c
+index 27ab5eb..c3aa284 100644
+--- a/src/helpers/ftp.c
++++ b/src/helpers/ftp.c
+@@ -423,6 +423,7 @@ static unsigned int nf_nat_ftp(struct pkt_buff *pkt,
+ 			break;
+ 		}
+ 	}
++	nfct_destroy(nat_tuple);
+ 
+ 	if (port == 0)
+ 		return NF_DROP;
+diff --git a/src/helpers/tftp.c b/src/helpers/tftp.c
+index 45591c6..70dd28a 100644
+--- a/src/helpers/tftp.c
++++ b/src/helpers/tftp.c
+@@ -65,6 +65,7 @@ static unsigned int nat_tftp(struct pkt_buff *pkt, uint32_t ctinfo,
+ 	nfexp_set_attr_u32(exp, ATTR_EXP_NAT_DIR, MYCT_DIR_REPL);
+ 	nfexp_set_attr(exp, ATTR_EXP_FN, "nat-follow-master");
+ 	nfexp_set_attr(exp, ATTR_EXP_NAT_TUPLE, nat_tuple);
++	nfct_destroy(nat_tuple);
+ 
+ 	return NF_ACCEPT;
+ }
+-- 
+cgit v0.12
+

@@ -1,0 +1,38 @@
+From c63bdecd96375309d32239c7a83d985ac51704c5 Mon Sep 17 00:00:00 2001
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+Date: Mon, 8 Mar 2021 16:29:25 +0100
+Subject: [PATCH] conntrackd: set default hashtable buckets and max entries if
+ not specified
+
+Fall back to 65536 buckets and 262144 entries.
+
+It would be probably good to add code to autoadjust by reading
+/proc/sys/net/netfilter/nf_conntrack_buckets and
+/proc/sys/net/nf_conntrack_max.
+
+Closes: https://bugzilla.netfilter.org/show_bug.cgi?id=1491
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+(cherry picked from commit 3276471d23d4d96d55e9a0fb7a10983d8097dc45)
+---
+ src/read_config_yy.y | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/read_config_yy.y b/src/read_config_yy.y
+index cc0eb183bde34..7f6dae821e5a2 100644
+--- a/src/read_config_yy.y
++++ b/src/read_config_yy.y
+@@ -1924,5 +1924,11 @@ init_config(char *filename)
+ 					 NF_NETLINK_CONNTRACK_DESTROY;
+ 	}
+ 
++	/* default hashtable buckets and maximum number of entries */
++	if (!CONFIG(hashsize))
++		CONFIG(hashsize) = 65536;
++	if (!CONFIG(limit))
++		CONFIG(limit) = 262144;
++
+ 	return 0;
+ }
+-- 
+2.38.0
+

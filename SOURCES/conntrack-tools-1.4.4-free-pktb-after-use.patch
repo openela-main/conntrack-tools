@@ -1,0 +1,29 @@
+From 832166dc4780e259424ebab07b42ecf42cde6fe3 Mon Sep 17 00:00:00 2001
+From: Kevin Cernekee <cernekee@chromium.org>
+Date: Fri, 27 Jan 2017 12:38:46 -0800
+Subject: conntrackd: cthelper: Free pktb after use
+
+According to valgrind, this currently leaks ~512B to 2kB for each
+packet sent to the userspace helper.
+
+Signed-off-by: Kevin Cernekee <cernekee@chromium.org>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+---
+ src/cthelper.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/cthelper.c b/src/cthelper.c
+index 54eb830..f01c509 100644
+--- a/src/cthelper.c
++++ b/src/cthelper.c
+@@ -325,6 +325,7 @@ static int nfq_queue_cb(const struct nlmsghdr *nlh, void *data)
+ 	if (pkt_verdict_issue(helper, myct, queue_num, id, verdict, pktb) < 0)
+ 		goto err4;
+ 
++	pktb_free(pktb);
+ 	nfct_destroy(ct);
+ 	if (myct->exp != NULL)
+ 		nfexp_destroy(myct->exp);
+-- 
+cgit v0.12
+
