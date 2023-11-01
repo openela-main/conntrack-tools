@@ -1,0 +1,85 @@
+From f6a8d9683fd0f20a24764628b04be7d6d806465b Mon Sep 17 00:00:00 2001
+From: Sam James <sam@gentoo.org>
+Date: Thu, 24 Nov 2022 07:57:37 +0000
+Subject: [PATCH] config: Fix -Wimplicit-function-declaration
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+read_config_yy.c: In function ‘yyparse’:
+read_config_yy.c:1765:16: warning: implicit declaration of function ‘yylex’ [-Wimplicit-function-declaration]
+ 1765 |       yychar = yylex ();
+      |                ^~~~~
+read_config_yy.c:1765:16: warning: nested extern declaration of ‘yylex’ [-Wnested-externs]
+read_config_yy.y:120:17: warning: implicit declaration of function ‘dlog’ [-Wimplicit-function-declaration]
+  120 |                 dlog(LOG_ERR, "LogFile path is longer than %u characters",
+      |                 ^~~~
+read_config_yy.y:120:17: warning: nested extern declaration of ‘dlog’ [-Wnested-externs]
+read_config_yy.y:240:14: warning: implicit declaration of function ‘inet_aton’; did you mean ‘in6_pton’? [-Wimplicit-function-declaration]
+  240 |         if (!inet_aton($2, &conf.channel[conf.channel_num].u.mcast.in)) {
+      |              ^~~~~~~~~
+      |              in6_pton
+
+Closes: https://bugzilla.netfilter.org/show_bug.cgi?id=1637
+Signed-off-by: Sam James <sam@gentoo.org>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+(cherry picked from commit 6ce497caac85f53a54e359ca57ad0f9dc379021f)
+---
+ src/read_config_lex.l |  3 ++-
+ src/read_config_yy.y  | 11 +++++++++++
+ 2 files changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/src/read_config_lex.l b/src/read_config_lex.l
+index 7dc400a3a9b5a..27084329d185c 100644
+--- a/src/read_config_lex.l
++++ b/src/read_config_lex.l
+@@ -21,6 +21,7 @@
+ 
+ #include <string.h>
+ 
++#include "log.h"
+ #include "conntrackd.h"
+ #include "read_config_yy.h"
+ %}
+@@ -174,7 +175,7 @@ notrack		[N|n][O|o][T|t][R|r][A|a][C|c][K|k]
+ %%
+ 
+ int
+-yywrap()
++yywrap(void)
+ {
+ 	return 1;
+ }
+diff --git a/src/read_config_yy.y b/src/read_config_yy.y
+index a2154be3733e1..f06c6afff7cbf 100644
+--- a/src/read_config_yy.y
++++ b/src/read_config_yy.y
+@@ -31,14 +31,25 @@
+ #include "cidr.h"
+ #include "helper.h"
+ #include "stack.h"
++#include "log.h"
++
++#include <sys/socket.h>
++#include <netinet/in.h>
++#include <arpa/inet.h>
++
+ #include <sched.h>
+ #include <dlfcn.h>
++
+ #include <libnetfilter_conntrack/libnetfilter_conntrack.h>
+ #include <libnetfilter_conntrack/libnetfilter_conntrack_tcp.h>
+ 
+ extern char *yytext;
+ extern int   yylineno;
+ 
++int yylex (void);
++int yyerror (char *msg);
++void yyrestart (FILE *input_file);
++
+ struct ct_conf conf;
+ 
+ static void __kernel_filter_start(void);
+-- 
+2.38.0
+
