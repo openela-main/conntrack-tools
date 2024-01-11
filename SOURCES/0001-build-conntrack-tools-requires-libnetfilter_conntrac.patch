@@ -1,0 +1,31 @@
+From 4bf9573505b4a50610311f30110dfdb6dd6b6d7b Mon Sep 17 00:00:00 2001
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+Date: Thu, 6 Oct 2022 16:25:29 +0200
+Subject: [PATCH] build: conntrack-tools requires libnetfilter_conntrack >=
+ 1.0.9
+
+Compilation breaks with 1.0.8 and lower versions, bump dependencies.
+
+Reported-by: Phil Sutter <phil@nwl.cc>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+(cherry picked from commit 35b013a311fcfaeb08b02955dd23aad97391b96a)
+---
+ configure.ac | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index 3034991b48ef6..f26189ae4b1b9 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -53,7 +53,7 @@ AC_CHECK_HEADER([rpc/rpc_msg.h], [AC_SUBST([LIBTIRPC_CFLAGS],'')], [PKG_CHECK_MO
+ 
+ PKG_CHECK_MODULES([LIBNFNETLINK], [libnfnetlink >= 1.0.1])
+ PKG_CHECK_MODULES([LIBMNL], [libmnl >= 1.0.3])
+-PKG_CHECK_MODULES([LIBNETFILTER_CONNTRACK], [libnetfilter_conntrack >= 1.0.8])
++PKG_CHECK_MODULES([LIBNETFILTER_CONNTRACK], [libnetfilter_conntrack >= 1.0.9])
+ AS_IF([test "x$enable_cttimeout" = "xyes"], [
+ 	PKG_CHECK_MODULES([LIBNETFILTER_CTTIMEOUT], [libnetfilter_cttimeout >= 1.0.0])
+ ])
+-- 
+2.38.0
+

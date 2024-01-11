@@ -1,0 +1,35 @@
+From 8ed5b5a7bd803adea89597ceba2fc515fd74f487 Mon Sep 17 00:00:00 2001
+From: Sam James <sam@gentoo.org>
+Date: Thu, 24 Nov 2022 07:51:23 +0000
+Subject: [PATCH] build: don't suppress various warnings
+
+These will become fatal with Clang 16 and GCC 14 anyway, but let's
+address the real problem (followup commit).
+
+We do have to keep one wrt yyerror() & const char * though, but
+the issue is contained to the code Bison generates.
+
+Closes: https://bugzilla.netfilter.org/show_bug.cgi?id=1637
+Signed-off-by: Sam James <sam@gentoo.org>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+(cherry picked from commit 6fc886b7e9937aaae01a5da4eb217c5825020de3)
+---
+ src/Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/Makefile.am b/src/Makefile.am
+index a1a91a0c8df66..2986ab3b4d4f9 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -61,7 +61,7 @@ conntrackd_SOURCES += systemd.c
+ endif
+ 
+ # yacc and lex generate dirty code
+-read_config_yy.o read_config_lex.o: AM_CFLAGS += -Wno-missing-prototypes -Wno-missing-declarations -Wno-implicit-function-declaration -Wno-nested-externs -Wno-undef -Wno-redundant-decls -Wno-sign-compare
++read_config_yy.o read_config_lex.o: AM_CFLAGS += -Wno-incompatible-pointer-types -Wno-discarded-qualifiers
+ 
+ conntrackd_LDADD = ${LIBMNL_LIBS} ${LIBNETFILTER_CONNTRACK_LIBS} \
+ 		   ${libdl_LIBS} ${LIBNFNETLINK_LIBS}
+-- 
+2.38.0
+
