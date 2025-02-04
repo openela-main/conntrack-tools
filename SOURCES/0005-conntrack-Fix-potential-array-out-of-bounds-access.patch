@@ -1,0 +1,28 @@
+From db7004f40134c4e51607df8ff2e83f8b1f8bca82 Mon Sep 17 00:00:00 2001
+From: Phil Sutter <phil@nwl.cc>
+Date: Tue, 20 Dec 2022 15:02:16 +0100
+Subject: [PATCH] conntrack: Fix potential array out of bounds access
+
+If the link target length exceeds 'sizeof(tmp)' bytes, readlink() will
+return 'sizeof(tmp)'. Using this value as index is illegal.
+
+Fixes: b031cd2102d9b ("conntrack: pretty-print the portid")
+Signed-off-by: Phil Sutter <phil@nwl.cc>
+(cherry picked from commit 3514a72f5a03ee7c6c268c31446b7a6994d4569d)
+---
+ src/conntrack.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/conntrack.c b/src/conntrack.c
+index 859a4835580b0..aa6323dfbd1b1 100644
+--- a/src/conntrack.c
++++ b/src/conntrack.c
+@@ -1769,7 +1769,7 @@ static char *portid2name(pid_t pid, uint32_t portid, unsigned long inode)
+ 			continue;
+ 
+ 		rl = readlink(procname, tmp, sizeof(tmp));
+-		if (rl <= 0 || rl > (ssize_t)sizeof(tmp))
++		if (rl <= 0 || rl >= (ssize_t)sizeof(tmp))
+ 			continue;
+ 
+ 		tmp[rl] = 0;

@@ -1,6 +1,6 @@
 Name:           conntrack-tools
 Version:        1.4.7
-Release:        2%{?dist}
+Release:        4%{?dist}
 Summary:        Manipulate netfilter connection tracking table and run High Availability
 License:        GPLv2
 URL:            http://conntrack-tools.netfilter.org/
@@ -12,6 +12,7 @@ Patch01:        0001-build-conntrack-tools-requires-libnetfilter_conntrac.patch
 Patch02:        0002-build-don-t-suppress-various-warnings.patch
 Patch03:        0003-network-Fix-Wstrict-prototypes.patch
 Patch04:        0004-config-Fix-Wimplicit-function-declaration.patch
+Patch05:        0005-conntrack-Fix-potential-array-out-of-bounds-access.patch
 
 BuildRequires:  gcc
 BuildRequires:  libnfnetlink-devel >= 1.0.1, libnetfilter_conntrack-devel >= 1.0.9
@@ -93,6 +94,12 @@ install -m 0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/conntrackd/
 %systemd_postun conntrackd.service 
 
 %changelog
+* Thu Nov 14 2024 Phil Sutter <psutter@redhat.com> - 1.4.7-4
+- Bump release for RHEL9.5
+
+* Thu Jun 20 2024 Phil Sutter <psutter@redhat.com> - 1.4.7-3
+- conntrack: Fix potential array out of bounds access
+
 * Wed Dec 14 2022 Phil Sutter <psutter@redhat.com> - 1.4.7-2
 - Explicitly depend on libnetfilter_conntrack-1.0.9
 
