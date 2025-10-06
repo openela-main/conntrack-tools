@@ -1,0 +1,46 @@
+From 22d290c9122a6b78db0ef3b6d1b29e3560dd615d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ahelenia=20Ziemia=C5=84ska?=
+ <nabijaczleweli@nabijaczleweli.xyz>
+Date: Tue, 3 Sep 2024 04:16:21 +0200
+Subject: [PATCH] conntrack: -L doesn't take a value, so don't discard one
+ (same for -IUDGEFA)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The manual says
+   COMMANDS
+       These options specify the particular operation to perform.
+       Only one of them can be specified at any given time.
+
+       -L --dump
+              List connection tracking or expectation table
+
+So, naturally, "conntrack -Lo extended" should work,
+but it doesn't, it's equivalent to "conntrack -L",
+and you need "conntrack -L -o extended".
+This violates user expectations (borne of the Utility Syntax Guidelines)
+and contradicts the manual.
+
+optarg is unused, anyway. Unclear why any of these were :: at all?
+
+Signed-off-by: Ahelenia Ziemiańska <nabijaczleweli@nabijaczleweli.xyz>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+(cherry picked from commit 33f030f7d4e64d3ee20f76330c50e02e9c92932c)
+---
+ src/conntrack.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/conntrack.c b/src/conntrack.c
+index 0d713520b9020..9fa49869b5534 100644
+--- a/src/conntrack.c
++++ b/src/conntrack.c
+@@ -337,7 +337,7 @@ static struct option original_opts[] = {
+ 	{0, 0, 0, 0}
+ };
+ 
+-static const char *getopt_str = ":L::I::U::D::G::E::F::A::hVs:d:r:q:"
++static const char *getopt_str = ":LIUDGEFAhVs:d:r:q:"
+ 				"p:t:u:e:a:z[:]:{:}:m:i:f:o:n::"
+ 				"g::c:b:C::Sj::w:l:<:>::(:):";
+ 

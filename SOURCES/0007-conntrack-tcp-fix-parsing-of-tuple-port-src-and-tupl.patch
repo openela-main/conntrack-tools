@@ -1,0 +1,39 @@
+From 580de3da8866cf647afb877f8109613c00286408 Mon Sep 17 00:00:00 2001
+From: Stephan Brunner <s.brunner@stephan-brunner.net>
+Date: Mon, 15 Jul 2024 16:13:42 +0200
+Subject: [PATCH] conntrack: tcp: fix parsing of tuple-port-src and
+ tuple-port-dst
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+As seen in the parsing code above, L4PROTO should be set to IPPROTO_TCP, not the port number itself.
+
+Fixes: 40efc1ebb15b ("conntrack: cleanup command line tool protocol extensions")
+Co-Developed-by: Reinhard Nißl <reinhard.nissl@fee.de>
+Signed-off-by: Stephan Brunner <s.brunner@stephan-brunner.net>
+(cherry picked from commit 8a251ddc8c9da5b04e95eaba23cde6ab6576b7ca)
+---
+ extensions/libct_proto_tcp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/extensions/libct_proto_tcp.c b/extensions/libct_proto_tcp.c
+index 27f583379d325..4681693598ae8 100644
+--- a/extensions/libct_proto_tcp.c
++++ b/extensions/libct_proto_tcp.c
+@@ -165,13 +165,13 @@ static int parse_options(char c,
+ 	case '8':
+ 		port = htons(atoi(optarg));
+ 		nfct_set_attr_u16(exptuple, ATTR_ORIG_PORT_SRC, port);
+-		nfct_set_attr_u8(exptuple, ATTR_ORIG_L4PROTO, port);
++		nfct_set_attr_u8(exptuple, ATTR_ORIG_L4PROTO, IPPROTO_TCP);
+ 		*flags |= CT_TCP_EXPTUPLE_SPORT;
+ 		break;
+ 	case '9':
+ 		port = htons(atoi(optarg));
+ 		nfct_set_attr_u16(exptuple, ATTR_ORIG_PORT_DST, port); 
+-		nfct_set_attr_u8(exptuple, ATTR_ORIG_L4PROTO, port);
++		nfct_set_attr_u8(exptuple, ATTR_ORIG_L4PROTO, IPPROTO_TCP);
+ 		*flags |= CT_TCP_EXPTUPLE_DPORT;
+ 		break;
+ 	}

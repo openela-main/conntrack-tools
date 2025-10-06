@@ -1,0 +1,55 @@
+From c76537bf2c0452aa9fca79aa668d13743a875d88 Mon Sep 17 00:00:00 2001
+From: Pfeil Daniel <pda@keba.com>
+Date: Thu, 25 Apr 2024 12:13:11 +0000
+Subject: [PATCH] conntrackd: helpers/rpc: Don't add expectation table entry
+ for portmap port
+
+After an RPC call to portmap using the portmap program number (100000),
+subsequent RPC calls are not handled correctly by connection tracking.
+This results in client connections to ports specified in RPC replies
+failing to operate.
+
+This issue arises because after an RPC call to portmap using the
+program number 100000, conntrackd adds an expectation table entry
+for the portmap port (typically 111). Due to this expectation table
+entry, subsequent RPC call connections are treated as sibling
+connections. Due to kernel restrictions, the connection helper for
+sibling connections cannot be changed. This is enforced in the kernel's
+handling in "net/netfilter/nf_conntrack_netlink.c", within the
+"ctnetlink_change_helper" function, after the comment:
+/* don't change helper of sibling connections */.
+Due to this kernel restriction, the private RPC data (struct rpc_info)
+sent from conntrackd to kernel-space is discarded by the kernel.
+
+To resolve this, the proposed change is to eliminate the creation of
+an expectation table entry for the portmap port. The portmap port has
+to be opened via an iptables/nftables rule anyway, so adding an
+expectation table entry for the portmap port is unnecessary.
+
+Why do our existing clients make RPC calls using the portmap program
+number? They use these calls for cyclic keepalive messages to verify
+that the link between the client and server is operational.
+
+Signed-Off-By: Daniel Pfeil <pda@keba.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+(cherry picked from commit 5b61acb75b74725d7914b24568023f670ddeff62)
+---
+ src/helpers/rpc.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/helpers/rpc.c b/src/helpers/rpc.c
+index 732e9ba412713..d8e49036b3078 100644
+--- a/src/helpers/rpc.c
++++ b/src/helpers/rpc.c
+@@ -399,6 +399,11 @@ rpc_helper_cb(struct pkt_buff *pkt, uint32_t protoff,
+ 				 xid, rpc_info->xid);
+ 			goto out;
+ 		}
++		/* Ignore portmap program number */
++		if (rpc_info->pm_prog == PMAPPROG) {
++			pr_debug("RPC REPL: ignore portmap program number %lu\n", PMAPPROG);
++			goto out;
++		}
+ 		if (rpc_reply(data, offset, datalen, rpc_info, &port_ptr) < 0)
+ 			goto out;
+ 

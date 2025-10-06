@@ -1,0 +1,33 @@
+From 58c1e3ecb6a5d45fd2d6f012c98e08429a249d11 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ignacy=20Gaw=C4=99dzki?=
+ <ignacy.gawedzki@green-communications.fr>
+Date: Wed, 7 Feb 2024 15:50:13 +0100
+Subject: [PATCH] conntrack: don't print [USERSPACE] information in case of XML
+ output
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+In case XML output is requested, refrain from appending "[USERSPACE]"
+and details to the output.
+
+Signed-off-by: Ignacy Gawędzki <ignacy.gawedzki@green-communications.fr>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+(cherry picked from commit e77aa7413d7feb315f9d388f595553af79a56d9d)
+---
+ src/conntrack.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/conntrack.c b/src/conntrack.c
+index c1551cadbdb33..0d713520b9020 100644
+--- a/src/conntrack.c
++++ b/src/conntrack.c
+@@ -1944,7 +1944,7 @@ static int event_cb(const struct nlmsghdr *nlh, void *data)
+ 
+ 	nfct_snprintf_labels(buf, sizeof(buf), ct, type, op_type, op_flags, labelmap);
+ done:
+-	if (nlh->nlmsg_pid) {
++	if (nlh->nlmsg_pid && !(output_mask & _O_XML)) {
+ 		char *prog = get_progname(nlh->nlmsg_pid);
+ 
+ 		if (prog)

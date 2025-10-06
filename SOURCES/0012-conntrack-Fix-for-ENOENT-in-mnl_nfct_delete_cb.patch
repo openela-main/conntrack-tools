@@ -1,0 +1,30 @@
+From 949818d6444f1692562b29bc0fb8d4d98d435276 Mon Sep 17 00:00:00 2001
+From: Phil Sutter <phil@nwl.cc>
+Date: Tue, 5 Nov 2024 22:27:34 +0100
+Subject: [PATCH] conntrack: Fix for ENOENT in mnl_nfct_delete_cb()
+
+Align behaviour with that of mnl_nfct_update_cb(): Just free the
+nf_conntrack object and return. Do not increment counter variable, and
+certainly do not try to print an uninitialized buffer.
+
+Fixes: a7abf3f5dc7c4 ("conntrack: skip ENOENT when -U/-D finds a stale conntrack entry")
+Reviewed-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Phil Sutter <phil@nwl.cc>
+(cherry picked from commit 4220bd83187b6deac7a93d6775aa5e4423b8e2e5)
+---
+ src/conntrack.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/conntrack.c b/src/conntrack.c
+index a51a3ef82fcfc..52ba4ac5e44f7 100644
+--- a/src/conntrack.c
++++ b/src/conntrack.c
+@@ -2030,7 +2030,7 @@ static int mnl_nfct_delete_cb(const struct nlmsghdr *nlh, void *data)
+ 	if (res < 0) {
+ 		/* the entry has vanish in middle of the delete */
+ 		if (errno == ENOENT)
+-			goto done;
++			goto destroy_ok;
+ 		exit_error(OTHER_PROBLEM,
+ 			   "Operation failed: %s",
+ 			   err2str(errno, CT_DELETE));

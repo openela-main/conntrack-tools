@@ -1,0 +1,80 @@
+From c8ec76ff8f57854cc30fcaad7df890e6127fba71 Mon Sep 17 00:00:00 2001
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+Date: Tue, 1 Oct 2024 13:46:18 +0200
+Subject: [PATCH] conntrack: improve --secmark,--id,--zone parser
+
+strtoul() is called with no error checking at all, add a helper
+function to validate input is correct for values less than
+UINT32_MAX.
+
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+(cherry picked from commit bd20d768ce9a1433182ac523ab2b6c18bb9a1649)
+---
+ src/conntrack.c | 35 +++++++++++++++++++++++++++++------
+ 1 file changed, 29 insertions(+), 6 deletions(-)
+
+diff --git a/src/conntrack.c b/src/conntrack.c
+index 9fa49869b5534..18829dbf79bce 100644
+--- a/src/conntrack.c
++++ b/src/conntrack.c
+@@ -1213,6 +1213,26 @@ parse_parameter_mask(const char *arg, unsigned int *status, unsigned int *mask,
+ 		exit_error(PARAMETER_PROBLEM, "Bad parameter `%s'", arg);
+ }
+ 
++static int parse_value(const char *str, uint32_t *ret, uint64_t max)
++{
++	char *endptr;
++	uint64_t val;
++
++	assert(max <= UINT32_MAX);
++
++	errno = 0;
++	val = strtoul(str, &endptr, 0);
++	if (endptr == str ||
++	    *endptr != '\0' ||
++	    (val == ULONG_MAX && errno == ERANGE) ||
++	    val > max)
++		return -1;
++
++	*ret = val;
++
++	return 0;
++}
++
+ static void
+ parse_u32_mask(const char *arg, struct u32_mask *m)
+ {
+@@ -2918,6 +2938,7 @@ static void do_parse(struct ct_cmd *ct_cmd, int argc, char *argv[])
+ 	struct ct_tmpl *tmpl;
+ 	int res = 0, partial;
+ 	union ct_address ad;
++	uint32_t value;
+ 	int c, cmd;
+ 
+ 	/* we release these objects in the exit_error() path. */
+@@ -3078,17 +3099,19 @@ static void do_parse(struct ct_cmd *ct_cmd, int argc, char *argv[])
+ 		case 'w':
+ 		case '(':
+ 		case ')':
++			if (parse_value(optarg, &value, UINT16_MAX) < 0)
++				exit_error(OTHER_PROBLEM, "unexpected value '%s' with -%c option", optarg, c);
++
+ 			options |= opt2type[c];
+-			nfct_set_attr_u16(tmpl->ct,
+-					  opt2attr[c],
+-					  strtoul(optarg, NULL, 0));
++			nfct_set_attr_u16(tmpl->ct, opt2attr[c], value);
+ 			break;
+ 		case 'i':
+ 		case 'c':
++			if (parse_value(optarg, &value, UINT32_MAX) < 0)
++				exit_error(OTHER_PROBLEM, "unexpected value '%s' with -%c option", optarg, c);
++
+ 			options |= opt2type[c];
+-			nfct_set_attr_u32(tmpl->ct,
+-					  opt2attr[c],
+-					  strtoul(optarg, NULL, 0));
++			nfct_set_attr_u32(tmpl->ct, opt2attr[c], value);
+ 			break;
+ 		case 'm':
+ 			options |= opt2type[c];

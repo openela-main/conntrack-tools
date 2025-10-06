@@ -1,0 +1,71 @@
+From 7541be6e37e1b9db4f88852258a8d0d2cefb4a77 Mon Sep 17 00:00:00 2001
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+Date: Sat, 12 Oct 2024 17:26:40 +0200
+Subject: [PATCH] conntrack: improve --mark parser
+
+Enhance helper function to parse mark and mask (if available), bail out
+if input is not correct.
+
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+(cherry picked from commit 401d91326bc9c3a5bab2fd319acdc844f511bb7e)
+---
+ src/conntrack.c | 34 +++++++++++++++++++++++++++-------
+ 1 file changed, 27 insertions(+), 7 deletions(-)
+
+diff --git a/src/conntrack.c b/src/conntrack.c
+index 18829dbf79bce..a51a3ef82fcfc 100644
+--- a/src/conntrack.c
++++ b/src/conntrack.c
+@@ -1233,17 +1233,35 @@ static int parse_value(const char *str, uint32_t *ret, uint64_t max)
+ 	return 0;
+ }
+ 
+-static void
++static int
+ parse_u32_mask(const char *arg, struct u32_mask *m)
+ {
+-	char *end;
++	uint64_t val, mask;
++	char *endptr;
++
++	val = strtoul(arg, &endptr, 0);
++	if (endptr == arg ||
++	    (*endptr != '\0' && *endptr != '/') ||
++	    (val == ULONG_MAX && errno == ERANGE) ||
++	    val > UINT32_MAX)
++		return -1;
+ 
+-	m->value = (uint32_t) strtoul(arg, &end, 0);
++	m->value = val;
+ 
+-	if (*end == '/')
+-		m->mask = (uint32_t) strtoul(end+1, NULL, 0);
+-	else
++	if (*endptr == '/') {
++		mask = strtoul(endptr + 1, &endptr, 0);
++		if (endptr == arg ||
++		    *endptr != '\0' ||
++		    (val == ULONG_MAX && errno == ERANGE) ||
++		    val > UINT32_MAX)
++			return -1;
++
++		m->mask = mask;
++	} else {
+ 		m->mask = ~0;
++	}
++
++	return 0;
+ }
+ 
+ static int
+@@ -3115,7 +3133,9 @@ static void do_parse(struct ct_cmd *ct_cmd, int argc, char *argv[])
+ 			break;
+ 		case 'm':
+ 			options |= opt2type[c];
+-			parse_u32_mask(optarg, &tmpl->mark);
++			if (parse_u32_mask(optarg, &tmpl->mark) < 0)
++				exit_error(OTHER_PROBLEM, "unexpected value '%s' with -%c option", optarg, c);
++
+ 			tmpl->filter_mark_kernel.val = tmpl->mark.value;
+ 			tmpl->filter_mark_kernel.mask = tmpl->mark.mask;
+ 			tmpl->filter_mark_kernel_set = true;

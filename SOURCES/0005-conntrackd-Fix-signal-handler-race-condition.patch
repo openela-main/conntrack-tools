@@ -1,0 +1,59 @@
+From 851ea4f58b9e3d725a079dcdb662b0964e1def8a Mon Sep 17 00:00:00 2001
+From: Markus Breitenberger <bre@keba.com>
+Date: Thu, 4 Apr 2024 10:39:39 +0000
+Subject: [PATCH] conntrackd: Fix signal handler race-condition
+
+Install signal handlers after everything is initialized as there is a
+race condition that can happen when the process gets terminated after
+the signal handler is installed but before all fields in the global
+state are set up correctly, leading to a SIGSEGV as the cleanup code
+dereferences uninitialized pointers.
+
+Signed-off-by: Markus Breitenberger <bre@keba.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+(cherry picked from commit 7372179b9879d8893dcc2a3a8b0555655caade37)
+---
+ src/run.c | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
+
+diff --git a/src/run.c b/src/run.c
+index 37a0eb1c6b957..b31fff5ecdbe1 100644
+--- a/src/run.c
++++ b/src/run.c
+@@ -277,6 +277,18 @@ init(void)
+ 	}
+ 	register_fd(STATE(local).fd, local_cb, NULL, STATE(fds));
+ 
++	/* Initialization */
++	if (CONFIG(flags) & (CTD_SYNC_MODE | CTD_STATS_MODE))
++		if (ctnl_init() < 0)
++			return -1;
++
++#ifdef BUILD_CTHELPER
++	if (CONFIG(flags) & CTD_HELPER) {
++		if (cthelper_init() < 0)
++			return -1;
++	}
++#endif
++
+ 	/* Signals handling */
+ 	sigemptyset(&STATE(block));
+ 	sigaddset(&STATE(block), SIGTERM);
+@@ -296,17 +308,6 @@ init(void)
+ 	if (signal(SIGCHLD, child) == SIG_ERR)
+ 		return -1;
+ 
+-	/* Initialization */
+-	if (CONFIG(flags) & (CTD_SYNC_MODE | CTD_STATS_MODE))
+-		if (ctnl_init() < 0)
+-			return -1;
+-
+-#ifdef BUILD_CTHELPER
+-	if (CONFIG(flags) & CTD_HELPER) {
+-		if (cthelper_init() < 0)
+-			return -1;
+-	}
+-#endif
+ 	time(&STATE(stats).daemon_start_time);
+ 
+ 	dlog(LOG_NOTICE, "initialization completed");
