@@ -1,6 +1,6 @@
 Name:           conntrack-tools
 Version:        1.4.8
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Manipulate netfilter connection tracking table and run High Availability
 License:        GPL-2.0-only
 URL:            http://conntrack-tools.netfilter.org/
@@ -23,6 +23,7 @@ Patch0010:      0010-conntrack-improve-secmark-id-zone-parser.patch
 Patch0011:      0011-conntrack-improve-mark-parser.patch
 Patch0012:      0012-conntrack-Fix-for-ENOENT-in-mnl_nfct_delete_cb.patch
 Patch0013:      0013-src-Eliminate-warnings-with-Wcalloc-transposed-args.patch
+Patch0014:      0014-nfct-helper-Extend-error-message-for-EBUSY.patch
 
 BuildRequires:  autoconf
 BuildRequires:  automake
@@ -104,6 +105,9 @@ install -m 0644 %{SOURCE4} %{buildroot}%{_sysconfdir}/conntrackd/
 %systemd_postun conntrackd.service
 
 %changelog
+* Tue Sep 09 2025 Phil Sutter <psutter@redhat.com> - 1.4.8-4
+- nfct: helper: Extend error message for EBUSY
+
 * Fri Nov 15 2024 Phil Sutter <psutter@redhat.com> - 1.4.8-3
 - Backport fixes from upstream
 

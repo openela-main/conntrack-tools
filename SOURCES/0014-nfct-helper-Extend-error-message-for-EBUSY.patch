@@ -1,0 +1,30 @@
+From 96f12bbb5f3bf88eadc1e0599c75b8d49ea54568 Mon Sep 17 00:00:00 2001
+From: Phil Sutter <phil@nwl.cc>
+Date: Fri, 15 Aug 2025 17:52:32 +0200
+Subject: [PATCH] nfct: helper: Extend error message for EBUSY
+
+Users may be not aware the user space helpers conflict with kernel space
+ones, so add a hint about the possible cause of the EBUSY code returned
+by the kernel.
+
+Cc: Yi Chen <yiche@redhat.com>
+Signed-off-by: Phil Sutter <phil@nwl.cc>
+(cherry picked from commit 766122f0a4cb966d85c13ad8cfabd636c9bcf043)
+---
+ src/nfct-extensions/helper.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/nfct-extensions/helper.c b/src/nfct-extensions/helper.c
+index 894bf269ad2bb..3d32703d13903 100644
+--- a/src/nfct-extensions/helper.c
++++ b/src/nfct-extensions/helper.c
+@@ -229,6 +229,9 @@ static int nfct_cmd_helper_add(struct mnl_socket *nl, int argc, char *argv[])
+ 	portid = mnl_socket_get_portid(nl);
+ 	if (nfct_mnl_talk(nl, nlh, seq, portid, NULL, NULL) < 0) {
+ 		nfct_perror("netlink error");
++		if (errno == EBUSY)
++			fprintf(stderr,
++				"Maybe unload nf_conntrack_%s.ko first?\n", argv[3]);
+ 		return -1;
+ 	}
+ 
